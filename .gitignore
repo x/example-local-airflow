@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Common places for your Python virtual environment
+.env
+.venv
+env/
+venv/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Vagrant
+.vagrant
+
+# Airflow
+airflow.db
+logs/
+airflow.cfg
+unittests.cfg
+airflow-webserver.pid
+
+# service acct credentials
+credentials.json
+
+# OSX files
+*.DS_Store
+
+# Env file
+dev.env
+.python-version

@@ -1,0 +1,67 @@
+version: '3'
+services:
+  airflow-webserver:
+    build: .
+    restart: always
+    depends_on:
+      - airflow-postgres
+    environment:
+      - EXECUTOR=Local
+      - LOAD_EX=n
+      - FERNET_KEY=x19IeYL1ZJwyYQ-z76N1kaPbZm1nJzDyRMnU2txQhro=
+
+        # Airflow Postres
+      - POSTGRES_HOST=airflow-postgres
+      - POSTGRES_DB=airflow
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_PORT=5432
+
+        # Staging Server CloudSQL Postgres (data that DAGs manipulate)
+      - CLOUDSQL_POSTGRES_HOST=cloudsql-proxy
+      - CLOUDSQL_POSTGRES_PORT=5432
+
+    env_file:
+      - dev.env
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+      - ./plugins:/usr/local/airflow/plugins
+      - ./requirements.txt:/requirements.txt
+      - ./variables.json:/usr/local/airflow/variables.json
+      - ~/.config:/usr/local/airflow/.config
+      - ~/.docker:/usr/local/airflow/.docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:8080
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  airflow-postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+
+  # Used for connecting to a staging environment cloudsql instance
+  cloudsql-proxy:
+    image: gcr.io/cloudsql-docker/gce-proxy:1.13
+    command: sh -c "/cloud_sql_proxy -dir=/cloudsql -instances=$${GCLOUD_PROJECT}:$${GCLOUD_REGION}:$${CLOUDSQL_INSTANCE_NAME}=tcp:0.0.0.0:5432"
+    env_file:
+      - dev.env
+    volumes:
+      - ~/.config:/root/.config
+
+  # Used for connecting to a staging environment foo kubernetes service instance
+  foo-kubernetes-service-proxy:
+    image: google/cloud-sdk:237.0.0
+    command: kubectl port-forward svc/foo 80 --address 0.0.0.0
+    volumes:
+      - ~/.config:/root/.config
+      - ~/.kube:/root/.kube
+      - /usr/local/Caskroom/google-cloud-sdk:/usr/local/Caskroom/google-cloud-sdk
+
